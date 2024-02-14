@@ -1,0 +1,88 @@
+
+// Program: MT5 Ticks HTTP Provider
+// Developer's site: forexroboteasy.com
+// Developer: Forex Robot Easy Team
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <Ticks\Ticks.mqh>
+#include <HttpClient\HttpClient.mqh>
+
+// Define constants
+#define SERVER_URL 'http://example.com/ticks'
+#define SYMBOLS_ARRAY_SIZE 10
+
+// Define global variables
+CTrade trade;
+CTick tick;
+string symbols[SYMBOLS_ARRAY_SIZE] = {'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCHF', 'NZDUSD', 'USDCAD', 'EURJPY', 'GBPJPY', 'AUDJPY'};
+
+// Function to initialize the MT5 Ticks HTTP Provider
+void OnInit()
+{
+   // Connect to the MT5 terminal
+   trade.RefreshRates();
+
+   // Fetch tick data for each symbol from the HTTP server
+   for (int i = 0; i < SYMBOLS_ARRAY_SIZE; i++)
+   {
+      string symbol = symbols[i];
+      
+      // Construct the URL for fetching tick data
+      string url = SERVER_URL + '?symbol=' + symbol;
+
+      // Create an HTTP client and send a GET request to the server
+      CHttpClient client;
+      client.Get(url);
+
+      // Check if the request was successful
+      if (client.StatusCode() == 200)
+      {
+         // Read the tick data from the response
+         string response = client.Content();
+         double price = StringToDouble(response);
+
+         // Set the tick data for the symbol
+         tick.symbol = symbol;
+         tick.bid = price;
+         tick.ask = price;
+
+         // Add the tick to the MT5 terminal
+         trade.UpdateTick(tick);
+      }
+   }
+}
+
+// Function to handle incoming ticks
+void OnTick()
+{
+   // Implement necessary trading functions for in-depth market analysis
+   // ...
+
+   // Check if the HTTP server has new tick data
+   CHttpClient client;
+   client.Get(SERVER_URL + '?check_new_ticks=true');
+
+   // Check if the request was successful
+   if (client.StatusCode() == 200)
+   {
+      // Read the tick data from the response
+      string response = client.Content();
+      double price = StringToDouble(response);
+
+      // Set the tick data for the symbol
+      tick.symbol = symbols[0];
+      tick.bid = price;
+      tick.ask = price;
+
+      // Add the tick to the MT5 terminal
+      trade.UpdateTick(tick);
+   }
+}
+
+// Function to deinitialize the MT5 Ticks HTTP Provider
+void OnDeinit(const int reason)
+{
+   // Disconnect from the MT5 terminal
+   trade.Shutdown();
+}
